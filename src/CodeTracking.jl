@@ -229,6 +229,7 @@ function definition(::Type{String}, method::Method)
         p = Base.unwrap_unionall(method.sig).parameters
         for i = 2:length(p)
             T = p[i]
+            isa(T, Core.TypeofVararg) && break # it's not our target, and there are no more arguments after this
             if T <: Function
                 mstring = string(nameof(T))
                 if startswith(mstring, '#')
@@ -237,7 +238,7 @@ function definition(::Type{String}, method::Method)
                 end
             end
         end
-        methodname == :kwcall && error("could not identify method name in `Core.kwcall`")
+        methodname == :kwcall && error("could not identify method name in `Core.kwcall` (signature: $(method.sig))")
     end
     file, line = whereis(method)
     line == 0 && return nothing
