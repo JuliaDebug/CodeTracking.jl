@@ -292,6 +292,11 @@ isdefined(Main, :Revise) ? Main.Revise.includet("script.jl") : include("script.j
     src, line = definition(String, m)
     @test occursin("::Type{P}", src)
     @test line == 148
+
+    # Graceful handling of `kwcall` definition lookup failure
+    m = @which Core.kwcall(NamedTuple(), Union{})
+    @test_throws "could not identify method name in `Core.kwcall`" definition(String, m)
+    @test_throws "signature: Tuple{typeof(Core.kwcall), Any, Type{Union{}}, Vararg{Any}}" definition(String, m)
 end
 
 @testset "With Revise" begin
