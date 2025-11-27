@@ -160,7 +160,9 @@ Returns `nothing` if there are no methods at that location.
 """
 function signatures_at(filename::AbstractString, line::Integer)
     if !startswith(filename, "REPL[")
-        filename = abspath(filename)
+        if ispath(filename)
+            filename = realpath(filename)
+        end
     end
     if occursin(juliabase, filename)
         rpath = postpath(filename, juliabase)
