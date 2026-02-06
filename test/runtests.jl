@@ -13,6 +13,10 @@ end
 
 isdefined(Main, :Revise) ? Main.Revise.includet("script.jl") : include("script.jl")
 
+if isdefined(Test, :detect_closure_boxes)
+    @test isempty(Test.detect_closure_boxes(CodeTracking))
+end
+
 @testset "CodeTracking.jl" begin
     m = first(methods(f1))
     file, line = whereis(m)
