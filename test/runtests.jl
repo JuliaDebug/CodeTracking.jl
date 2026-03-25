@@ -116,7 +116,7 @@ end
     @test whereis(m) == ("REPL[1]", 1)
     # Test with broken lookup
     oldlookup = CodeTracking.method_lookup_callback[]
-    CodeTracking.method_lookup_callback[] = m -> error("oops")
+    CodeTracking.method_lookup_callback[] = (_) -> error("oops")
     @test whereis(m) == ("REPL[1]", 1)
     CodeTracking.method_lookup_callback[] = oldlookup
 
