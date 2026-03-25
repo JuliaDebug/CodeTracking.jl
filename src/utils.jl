@@ -336,8 +336,13 @@ end
 
 function src_from_REPL(origin::AbstractString, repl = Base.active_repl)
     hist_idx = parse(Int, origin)
-    hp = repl.interface.modes[1].hist
-    return hp.history[hp.start_idx+hist_idx]
+    hp = repl.interface.modes[1].hist::REPL.REPLHistoryProvider
+    entry = hp.history[hp.start_idx+hist_idx]
+    @static if VERSION ≥ v"1.13-"
+        return entry.content
+    else
+        return entry
+    end
 end
 
 function basepath(id::PkgId)
