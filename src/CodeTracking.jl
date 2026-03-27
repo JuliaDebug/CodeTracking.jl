@@ -15,6 +15,7 @@ using Core: LineInfoNode, MethodTable
 using Base.Meta: isexpr
 using UUIDs
 using InteractiveUtils
+using REPL: REPL
 
 export code_expr, @code_expr, code_string, @code_string, whereis, definition, pkgfiles, signatures_at
 
