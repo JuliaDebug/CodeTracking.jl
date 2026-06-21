@@ -95,6 +95,9 @@ end
 
     @test pkgfiles("ColorTypes") === nothing
     @test_throws ErrorException pkgfiles("NotAPkg")
+    let id = Base.PkgId(CodeTracking)
+        @test pkgfiles("CodeTracking", id.uuid) === pkgfiles(id)
+    end
 
     # PartialStruct parametric constructors
     m = @which LikeNamedTuple{(:a,)}((1,))
@@ -119,6 +122,19 @@ end
     CodeTracking.method_lookup_callback[] = (_) -> error("oops")
     @test whereis(m) == ("REPL[1]", 1)
     CodeTracking.method_lookup_callback[] = oldlookup
+
+    # `MethodInfoKey` iterates as `(method_table, signature)`
+    let key = MethodInfoKey(nothing, Tuple{typeof(sum), Any})
+        mt, sig = key
+        @test mt === nothing
+        @test sig === Tuple{typeof(sum), Any}
+        @test iterate(key, 2) === nothing
+    end
+
+    # `whereis(lineinfo, method)`: a mismatched basename returns the queried location unchanged
+    let m = first(methods(f1))
+        @test whereis(("elsewhere.jl", 42), m) == (CodeTracking.maybe_fix_path("elsewhere.jl"), 42)
+    end
 
     # Method definitions ending in semicolon
     @test code_string(has_semicolon1, (Int, Int)) == "has_semicolon1(x, y) = x + y"
@@ -224,6 +240,10 @@ end
     src, line = definition(String, only(methods(c470)))
     @test occursin("\$argnames", src)
     @test line == 137
+    # Single-line `eval(:(...))`: definition is recovered from the quoted expression
+    src, line = definition(String, only(methods(eval_oneline)))
+    @test occursin("eval_oneline(x)", src) && occursin("2x + 1", src)
+    @test line == 171
 
     # unnamed arguments
     m = which(unnamedarg, (Type{String}, Any))
@@ -335,6 +355,8 @@ end
             (mt, sig) = first(mt_sigs)
             @test sig == Tuple{typeof(CodeTracking.checkname), Expr, Any}
             @test pkgfiles(CodeTracking).id == Base.PkgId(CodeTracking)
+            # A line spanned by no method returns `nothing`
+            @test signatures_at(CodeTracking, "src/utils.jl", 1) === nothing
         end
 
         # REPL (test copied from Revise). `active_repl` is left `nothing` when no
