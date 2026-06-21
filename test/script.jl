@@ -166,3 +166,6 @@ struct MyNamedTuple{names, T} end
 @eval (MyNamedTuple{names, T}(args::T) where {names, T <: Tuple}) = begin
     $(Expr(:splatnew, :(MyNamedTuple{names, T}), :args))
 end
+
+# Single-line `eval(:(...))`: the method's line points at the `eval` call itself
+eval(:(eval_oneline(x) = 2x + 1))
