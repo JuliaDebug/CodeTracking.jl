@@ -160,11 +160,39 @@ end
     eval(ex)
     m = first(methods(replfunc))
     @test whereis(m) == ("REPL[1]", 1)
-    # Test with broken lookup
-    oldlookup = CodeTracking.method_lookup_callback[]
-    CodeTracking.method_lookup_callback[] = (_) -> error("oops")
-    @test whereis(m) == ("REPL[1]", 1)
-    CodeTracking.method_lookup_callback[] = oldlookup
+
+    # Ordinary callback failures fall back to the method's original location,
+    # but user interrupts must propagate.
+    let m = first(methods(f1))
+        key = MethodInfoKey(m)
+        cached = pop!(CodeTracking.method_info, key, nothing)
+        oldlookup = CodeTracking.method_lookup_callback[]
+        try
+            CodeTracking.method_lookup_callback[] = (_) -> error("oops")
+            @test whereis(m) == (CodeTracking.maybe_fix_path(String(m.file)), m.line)
+            @test definition(Expr, m) === nothing
+
+            CodeTracking.method_lookup_callback[] = (_) -> throw(InterruptException())
+            @test_throws InterruptException whereis(m)
+            @test_throws InterruptException definition(Expr, m)
+        finally
+            CodeTracking.method_lookup_callback[] = oldlookup
+            cached === nothing || (CodeTracking.method_info[key] = cached)
+        end
+    end
+
+    let oldexpressions = CodeTracking.expressions_callback[]
+        id = Base.PkgId(CodeTracking)
+        try
+            CodeTracking.expressions_callback[] = (_, _) -> error("oops")
+            @test signatures_at(id, "src/CodeTracking.jl", 1) === nothing
+
+            CodeTracking.expressions_callback[] = (_, _) -> throw(InterruptException())
+            @test_throws InterruptException signatures_at(id, "src/CodeTracking.jl", 1)
+        finally
+            CodeTracking.expressions_callback[] = oldexpressions
+        end
+    end
 
     # `MethodInfoKey` iterates as `(method_table, signature)`
     let key = MethodInfoKey(nothing, Tuple{typeof(sum), Any})

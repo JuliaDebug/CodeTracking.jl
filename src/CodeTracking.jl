@@ -96,7 +96,8 @@ function whereis(method::Method)
             try
                 Base.invokelatest(f, method)
                 lin = get(method_info, MethodInfoKey(method), nothing)
-            catch
+            catch err
+                err isa InterruptException && rethrow()
             end
         end
     end
@@ -219,7 +220,8 @@ function signatures_at(id::PkgId, relpath::AbstractString, line::Integer)
                 line ∈ lr && return mt_sigs
             end
         end
-    catch
+    catch err
+        err isa InterruptException && rethrow()
     end
     return nothing
 end
@@ -290,7 +292,8 @@ function definition(::Type{String}, method::Method)
         istart = linestarts[lineindex]
         try
             ex, iend = Meta.parse(src, istart)
-        catch
+        catch err
+            err isa InterruptException && rethrow()
         end
         lineindex -= 1
         line -= 1
@@ -325,7 +328,8 @@ function definition(::Type{Expr}, method::Method)
             try
                 Base.invokelatest(f, method)
                 def = get(method_info, MethodInfoKey(method), nothing)
-            catch
+            catch err
+                err isa InterruptException && rethrow()
             end
         end
     end
