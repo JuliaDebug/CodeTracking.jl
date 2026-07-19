@@ -371,11 +371,23 @@ end
 # Some packages use this function
 maybe_fixup_stdlib_path(path) = Base.fixup_stdlib_path(path)
 
+function findpostpath(filename, pre)
+    fileparts = splitpath(filename)
+    preparts = splitpath(pre)
+    npre = length(preparts)
+    laststart = length(fileparts) - npre + 1
+    laststart < 1 && return nothing
+    for i = 1:laststart
+        fileparts[i:i+npre-1] == preparts || continue
+        postparts = fileparts[i+npre:end]
+        return isempty(postparts) ? "" : joinpath(postparts...)
+    end
+    return nothing
+end
+
 function postpath(filename, pre)
-    idx = findfirst(pre, filename)
-    idx === nothing && error(pre, " not found in ", filename)
-    post = filename[first(idx) + length(pre) : end]
-    post[1:1] == Base.Filesystem.path_separator && return post[2:end]
+    post = findpostpath(filename, pre)
+    post === nothing && error(pre, " not found in ", filename)
     return post
 end
 

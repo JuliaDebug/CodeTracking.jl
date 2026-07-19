@@ -99,6 +99,49 @@ end
         @test pkgfiles("CodeTracking", id.uuid) === pkgfiles(id)
     end
 
+    @testset "signatures_at path resolution" begin
+        @test CodeTracking.findpostpath("base", CodeTracking.juliabase) === nothing
+
+        id = Base.PkgId(string(gensym(:PathResolution)))
+        oldexpressions = CodeTracking.expressions_callback[]
+        queries = Tuple{Base.PkgId,String}[]
+        CodeTracking.expressions_callback[] = (qid, path) -> (push!(queries, (qid, path)); ())
+        try
+            mktempdir() do dir
+                pkgdir = joinpath(dir, "julia", "baseball")
+                mkpath(pkgdir)
+                sourcefile = joinpath(pkgdir, "source.jl")
+                write(sourcefile, "f() = 1\n")
+                info = CodeTracking.PkgFiles(id, pkgdir, ["source.jl"])
+                CodeTracking._pkgfiles[id] = info
+
+                # A path component that merely starts with "base" must not be
+                # mistaken for Julia's Base source directory.
+                @test signatures_at(sourcefile, 1) === nothing
+                @test popfirst!(queries) == (id, "source.jl")
+
+                # Included files may live outside a package's base directory.
+                externalfile = joinpath(dir, "external.jl")
+                write(externalfile, "g() = 2\n")
+                externalpath = relpath(externalfile, pkgdir)
+                push!(info.files, externalpath)
+                @test signatures_at(externalfile, 1) === nothing
+                @test popfirst!(queries) == (id, externalpath)
+
+                if !Sys.iswindows()
+                    linkdir = joinpath(dir, "linked-package")
+                    symlink(pkgdir, linkdir)
+                    @test signatures_at(joinpath(linkdir, "source.jl"), 1) === nothing
+                    @test popfirst!(queries) == (id, "source.jl")
+                end
+                @test isempty(queries)
+            end
+        finally
+            CodeTracking.expressions_callback[] = oldexpressions
+            delete!(CodeTracking._pkgfiles, id)
+        end
+    end
+
     # PartialStruct parametric constructors
     m = @which LikeNamedTuple{(:a,)}((1,))
     _, line = whereis(m)

@@ -161,14 +161,13 @@ Returns `nothing` if there are no methods at that location.
 """
 function signatures_at(filename::AbstractString, line::Integer)
     if !startswith(filename, "REPL[")
-        filename = abspath(filename)
+        filename = ispath(filename) ? realpath(filename) : abspath(filename)
     end
-    if occursin(juliabase, filename)
-        rpath = postpath(filename, juliabase)
+    rpath = findpostpath(filename, juliabase)
+    if rpath !== nothing
         id = PkgId(Base)
         return signatures_at(id, rpath, line)
-    elseif occursin(juliastdlib, filename)
-        rpath = postpath(filename, juliastdlib)
+    elseif (rpath = findpostpath(filename, juliastdlib)) !== nothing
         spath = splitpath(rpath)
         libname = spath[1]
         project = Base.active_project()
@@ -180,12 +179,15 @@ function signatures_at(filename::AbstractString, line::Integer)
         return signatures_at(id, filename, line)
     end
     for (id, pkgfls) in _pkgfiles
-        if startswith(filename, basedir(pkgfls)) || id.name == "Main"
-            bdir = basedir(pkgfls)
-            rpath = isempty(bdir) ? filename : relpath(filename, bdir)
-            if rpath ∈ pkgfls.files
-                return signatures_at(id, rpath, line)
-            end
+        bdir = basedir(pkgfls)
+        if isempty(bdir)
+            rpath = filename
+        else
+            bdir = ispath(bdir) ? realpath(bdir) : abspath(bdir)
+            rpath = relpath(filename, bdir)
+        end
+        if rpath ∈ pkgfls.files
+            return signatures_at(id, rpath, line)
         end
     end
     throw(ArgumentError("$filename not found in internal data, perhaps the package is not loaded (or not loaded with `includet`)"))
