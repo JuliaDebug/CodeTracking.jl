@@ -209,6 +209,14 @@ end
 
     # Method definitions ending in semicolon
     @test code_string(has_semicolon1, (Int, Int)) == "has_semicolon1(x, y) = x + y"
+    mktemp() do path, io
+        write(io, "trailing_semicolon_whitespace(x) = x;  \t\n")
+        close(io)
+        mod = Module(gensym(:TrailingWhitespace))
+        Base.include(mod, path)
+        f = Base.invokelatest(getfield, mod, :trailing_semicolon_whitespace)
+        @test code_string(f, (Any,)) == "trailing_semicolon_whitespace(x) = x"
+    end
 
     # Test implicit replacement of `BUILDBOT_STDLIB_PATH`
     m = first(methods(Test.eval))

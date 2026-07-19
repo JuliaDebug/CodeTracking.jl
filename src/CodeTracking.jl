@@ -303,9 +303,9 @@ function definition(::Type{String}, method::Method)
 end
 
 function clean_source(src)
-    src = strip(src, '\n')
+    src = rstrip(strip(src, '\n'))
     if endswith(src, ';')
-        src = src[1:prevind(src, end)]
+        src = rstrip(src[1:prevind(src, end)])
     end
     return src
 end
