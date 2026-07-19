@@ -5,7 +5,7 @@ CodeTracking can be thought of as an extension of InteractiveUtils, and pairs we
 - `code_expr`, `@code_expr`: fetch the expression for a method definition
 - `definition`: a lower-level variant of the above
 - `pkgfiles`: return information about the source files that define a package
-- `whereis`: Return location information about methods (with Revise, it updates as you edit files)
+- `whereis`: return location information about methods (with Revise, it updates as you edit files)
 - `signatures_at`: return the signatures (and the corresponding method table) of all methods whose definition spans the specified location
 """
 module CodeTracking
@@ -56,21 +56,18 @@ const method_info = IdDict{MethodInfoKey,Union{Missing,Vector{Tuple{LineNumberNo
 
 const _pkgfiles = Dict{PkgId,PkgFiles}()
 
-# Callback for method-lookup. `lookupfunc = method_lookup_callback[]` must have the form
-#     ret = lookupfunc(method)
-# where `ret` is either `nothing` or `(lnn, def)`. `lnn` is a LineNumberNode (or any valid
-# input to `CodeTracking.fileline`) and `def` is the expression defining the method.
+# A method-lookup callback must accept a `Method`. Its return value is ignored; the callback
+# may communicate the result by populating `method_info` with the definition or `missing`.
 const method_lookup_callback = Ref{Any}(nothing)
 
 # Callback for `signatures_at` (lookup by file/lineno). `lookupfunc = expressions_callback[]`
 # must have the form
-#    mod, exs_infos = lookupfunc(id, relpath)
+#    mod_exs_infos = lookupfunc(id, relpath)
 # where
 #    id is the PkgId of the corresponding package
 #    relpath is the path of the file from the basedir of `id`
-#    mod is the "active" module at that point in the source
-#    exs_infos is a `ex => mt_sigs` dictionary, where `ex` is the source expression and `mt_sigs`
-#        a list of `method_table => signature` pairs defined by that expression.
+#    mod_exs_infos iterates over `mod => exs_infos` pairs, where `mod` is the active module and
+#        `exs_infos` maps each source expression to its `method_table => signature` pairs.
 const expressions_callback = Ref{Any}(nothing)
 
 const juliabase = joinpath("julia", "base")
@@ -195,11 +192,11 @@ function signatures_at(filename::AbstractString, line::Integer)
 end
 
 """
-    mt_sigs = signatures_at(mod::Module, relativepath, line)
+    mt_sigs = signatures_at(mod::Module, relpath, line)
 
 For a package that defines module `mod`, return the `method_table => signature` pairs of
-all methods whose definition spans the specified location. `relativepath` indicates the
-path of the file relative to the packages top-level directory, e.g., `"src/utils.jl"`.
+all methods whose definition spans the specified location. `relpath` indicates the
+path of the file relative to the package's top-level directory, e.g., `"src/utils.jl"`.
 `line` must correspond to a line in the method body (not the signature or final `end`).
 
 Returns `nothing` if there are no methods at that location.
@@ -232,7 +229,7 @@ end
 Return a string with the code that defines `method`. Also return the first line of the
 definition, including the signature (which may not be the same line number returned
 by `whereis`). If the method can't be located (line number 0), then `definition`
-instead returns `nothing.`
+instead returns `nothing`.
 
 Note this may not be terribly useful for methods that are defined inside `@eval` statements;
 see [`definition(Expr, method::Method)`](@ref) instead.

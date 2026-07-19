@@ -92,7 +92,7 @@ julia> m.line
 648
 ```
 
-In this (ficticious) example, `sum` moved because I deleted a few lines higher in the file;
+In this (fictitious) example, `sum` moved because I deleted a few lines higher in the file;
 these didn't affect the functionality of `sum` (so we didn't need to redefine and recompile it),
 but it does change the starting line number of the file at which this method appears.
 `whereis` reports the current line number, and `m.line` the old line number. (For technical reasons, it is important that `m.line` remain at the value it had when the code was lowered.)
@@ -126,7 +126,7 @@ julia> signatures_at("/home/tim/.julia/packages/ColorTypes/BsAWO/src/traits.jl",
 
 with the first element being the method table for which the method was added (a value of `nothing` denotes the default method table).
 
-CodeTracking also helps correcting for [Julia issue #26314](https://github.com/JuliaLang/julia/issues/26314):
+CodeTracking also works around [Julia issue #26314](https://github.com/JuliaLang/julia/issues/26314):
 
 ```julia
 julia> @which uuid1()

@@ -224,7 +224,7 @@ end
     scopes = linetable_scopes(m::Method)
 
 Return an array of "scopes" for each statement in the lowered code for `m`. If
-`src = Base.uncompressed_ast(m)`, then `scopes[pc]` is an vector of
+`src = Base.uncompressed_ast(m)`, then `scopes[pc]` is a vector of
 `LineInfoNode` objects that represent the scopes active at the statement at
 position `pc` in `src.code`.
 
@@ -323,7 +323,7 @@ If you happen to have a file where the name matches `REPL[\$i]`, first pass it t
 `abspath`.
 """
 function src_from_file_or_REPL(origin::AbstractString, args...)
-    # This Varargs design prevents an unnecessary error when Base.active_repl is undefined
+    # This varargs design prevents an unnecessary error when Base.active_repl is undefined
     # and `origin` does not match "REPL[$i]"
     m = match(rREPL, origin)
     if m !== nothing
@@ -354,7 +354,7 @@ end
 """
     path = maybe_fix_path(path)
 
-Return a normalized, absolute path for a source file `path`.
+Return a corrected path for a source file `path`, resolving relative paths when possible.
 """
 function maybe_fix_path(file)
     if !isabspath(file)
