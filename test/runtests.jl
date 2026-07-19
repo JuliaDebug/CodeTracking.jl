@@ -556,6 +556,16 @@ end
     @test body == "hasdefault(xd, yd=2) = xd + yd"
     body, _ = CodeTracking.definition(String, which(hasdefaulttypearg, (Type{Float32},)))
     @test startswith(body, "hasdefaulttypearg(::Type{T}=Rational{Int}) where T = zero(T)")
+
+    # Unsupported forms should raise without dumping internal syntax to stdout.
+    mktemp() do _, io
+        @test_throws ErrorException redirect_stdout(io) do
+            CodeTracking.get_argname(:(x + y))
+        end
+        flush(io)
+        seekstart(io)
+        @test isempty(read(io, String))
+    end
 end
 
 @testset "tuple-destructured args" begin

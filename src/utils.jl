@@ -167,7 +167,6 @@ function get_argname(@nospecialize(ex))
     isexpr(ex, :macrocall) && return get_argname(ex.args[end])  # @nospecialize
     isexpr(ex, :...) && return get_argname(only(ex.args))       # varargs
     isexpr(ex, :tuple) && return Symbol("")                     # tuple-destructuring
-    dump(ex)
     error("unexpected argument ", ex)
 end
 
