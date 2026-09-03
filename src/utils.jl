@@ -334,14 +334,15 @@ function src_from_file_or_REPL(origin::AbstractString, args...)
     return read(origin, String)
 end
 
-function src_from_REPL(origin::AbstractString, repl = Base.active_repl)
+function src_from_REPL(origin::AbstractString, repl = isdefined(Base, :active_repl) ? Base.active_repl : nothing)
+    repl === nothing && return nothing
     hist_idx = parse(Int, origin)
-    hp = repl.interface.modes[1].hist::REPL.REPLHistoryProvider
+    hp = repl.interface.modes[1].hist
     entry = hp.history[hp.start_idx+hist_idx]
     @static if VERSION ≥ v"1.13-"
-        return entry.content
+        return entry.content::String
     else
-        return entry
+        return entry::String
     end
 end
 
