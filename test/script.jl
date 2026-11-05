@@ -169,3 +169,18 @@ end
 
 # Single-line `eval(:(...))`: the method's line points at the `eval` call itself
 eval(:(eval_oneline(x) = 2x + 1))
+
+# Anonymous closures, each passed as a call argument on its own line
+make_anon_function(a) = identity(
+    function (x::Vector{Float32}, i)
+        return x[i] + a
+    end
+)
+make_anon_function_kw(a) = identity(
+    function (x::Vector{Float32}, i; k = a)
+        return x[i] + k
+    end
+)
+make_arrow_kw(a) = identity(
+    (x::Vector{Float32}, i; k = a) -> x[i] + k
+)

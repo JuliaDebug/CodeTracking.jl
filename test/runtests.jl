@@ -505,3 +505,20 @@ end
     CodeTracking.method_info[MethodInfoKey(method)] = [(lnn, ex)]
     @test CodeTracking.definition(Expr, method) == ex
 end
+
+@testset "anonymous closures" begin
+    for (make, src) in ((make_anon_function, "function (x::Vector{Float32}, i)"),
+                        (make_anon_function_kw, "function (x::Vector{Float32}, i; k = a)"),
+                        (make_arrow_kw, "(x::Vector{Float32}, i; k = a) -> x[i] + k"))
+        f = make(1.0f0)
+        m = only(methods(f))
+        body, _ = CodeTracking.definition(String, m)
+        @test startswith(lstrip(body), src)
+        if !isempty(Base.kwarg_decl(m))
+            # the keyword-body method; its function type is the closure's last type parameter
+            kwbody = only(methods(typeof(f).parameters[end].instance))
+            body, _ = CodeTracking.definition(String, kwbody)
+            @test startswith(lstrip(body), src)
+        end
+    end
+end
