@@ -61,7 +61,15 @@ function is_func_expr(@nospecialize(ex), meth::Method)
     ex = get_func_expr(ex)
     is_func_expr(ex) || return false
     fname = nothing
-    if ex.head == :(->)
+    sigex = ex.args[1]
+    if ex.head == :function && get_call_expr(sigex) === nothing
+        # anonymous `function (args...) ... end`: match the argument tuple as for `->`
+        while isexpr(sigex, (:where, :(::)))
+            sigex = sigex.args[1]
+        end
+        isexpr(sigex, :tuple) || return false
+        exargs = sigex.args
+    elseif ex.head == :(->)
         exargs = ex.args[1]
         if isexpr(exargs, :tuple)
             exargs = exargs.args
@@ -308,6 +316,18 @@ function kwmethod_basename(meth::Method)
             return ftypname === Tname
         end
         false
+    end
+    if idx === nothing
+        # The kwbody of an anonymous closure is named after neither the closure nor its type,
+        # but like every kwbody it has its own name in place of `#self#`, and the
+        # (unnamed) closure object follows the keyword arguments.
+        margs = Base.method_argnames(meth)
+        if margs[1] !== Symbol("#self#")
+            params = Base.unwrap_unionall(meth.sig).parameters
+            idx = findfirst(eachindex(margs)) do i
+                i > 1 && margs[i] === Symbol("") && i <= length(params) && params[i] isa Type && params[i] <: Function
+            end
+        end
     end
     idx === nothing && return name_final, 0
     return name_final, idx
